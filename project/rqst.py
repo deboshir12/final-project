@@ -1,39 +1,53 @@
 import requests
-import json
-# целевой URL-адрес
-key1='650889ad-e315-4ce5-a923-9bcf7a6a2f06'
-key2 = 'rukncn0154'
-url = 'https://routing.api.2gis.com/public_transport/2.0?key='+key1
-# данные в виде словаря
-param = {'some': 'data'}
-# кодируем словарь в формат JSON
+import datetime 
+from tabulate import tabulate
+from math import ceil
 
-# отправка POST-запроса с данными в формате JSON
-header1 =  {'Content-Type': 'application/json'}
-data1 ={
-	"locale": "ru",
-	"source":
-	{
-		"name": "Point A",
-		"point":
-		{
-			"lat": 51.734588,
-			"lon": 36.149328
-		}
-	},
-	"target":
-	{
-		"name": "Point B",
-		"point":
-		{
-			"lat": 51.734183,
-			"lon": 36.176865
-		}
-	},
-	"transport": ["bus", "tram"]
-}
-main = {'data':data1,
-        'header':header1}
-json_param = json.dumps(data1)
-resp = requests.post(url, data=json_param)
-print(resp)
+default_date = datetime.datetime.now()
+key = 'eb3a79de-1bd8-4e64-8a74-f95314d94149'
+event = 'departure'
+station_code = 's9602494'
+transport_type = 'suburban'
+
+def flight_table(event):
+    station_code = 's9600366'
+    schedule_api = f'https://api.rasp.yandex.net/v3.0/schedule/?apikey={key}&station={station_code}&date={str(default_date)}&event={event}'
+    response = requests.get(schedule_api).json()
+    number_of_flights = int(ceil(response['pagination']['total']/100))
+    flights = []
+    for i in range(number_of_flights):
+        schedule_api = f'https://api.rasp.yandex.net/v3.0/schedule/?apikey={key}&station={station_code}&date={str(default_date)}&offset={i*100}&event={event}'
+        response = requests.get(schedule_api).json()
+        name = response['station']['station_type_name']+' '+response['station']['title']
+        timesheet = response['schedule']
+        for flight in timesheet:
+            info = []
+            if default_date < datetime.datetime.fromisoformat(flight['departure'][:19]):
+                info.append(flight['thread']['number'])
+                info.append(flight['thread']['title'])
+                info.append(flight['departure'][11:19])
+                flights.append(info)
+    #print(f'Табло рейсов на Вылет, {name} \n')
+    return ('<pre>'+tabulate(flights, headers = ["Рейс№", "Рейс", "Время вылета(!Местное время!)"], tablefmt="plain") + '</pre>')
+
+def train_table(station_code, event):
+    schedule_api = f'https://api.rasp.yandex.net/v3.0/schedule/?apikey={key}&station={station_code}&date={str(default_date)}&event={event}'
+    response = requests.get(schedule_api).json()
+    name = response['station']['station_type_name']+' '+response['station']['title']
+    number_of_trains = int(ceil(response['pagination']['total']/100))
+    trains = []
+    for i in range(number_of_trains):
+        schedule_api = f'https://api.rasp.yandex.net/v3.0/schedule/?apikey={key}&station={station_code}&date={str(default_date)}&offset={i*100}&event={event}&transport_types={transport_type}'
+        response = requests.get(schedule_api).json()
+        timesheet = response['schedule']
+        for train in timesheet:
+            info = []
+            if default_date < datetime.datetime.fromisoformat(train['departure'][:19]):
+                info.append(train['thread']['number'])
+                info.append(train['thread']['title'])
+                info.append(train['departure'][11:19])
+                trains.append(info)
+    #return (f'Расписание поездов, {name} \n')
+    return ('<pre>'+tabulate(trains, headers = ["№Номер поезда", "Поезд", "Время отправления(!Местное время!)"], tablefmt="plain")+ '</pre>')
+print(train_table(station_code ,event))
+#print(flight_table('departure'))
