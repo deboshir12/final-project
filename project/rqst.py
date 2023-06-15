@@ -3,11 +3,12 @@ import datetime
 from tabulate import tabulate
 from math import ceil
 
+
 default_date = datetime.datetime.now()
 key = 'eb3a79de-1bd8-4e64-8a74-f95314d94149'
 event = 'departure'
 station_code = 's9602494'
-transport_type = 'suburban'
+transport_type = 'train'
 
 def flight_table(event):
     station_code = 's9600366'
@@ -25,7 +26,7 @@ def flight_table(event):
             if default_date < datetime.datetime.fromisoformat(flight['departure'][:19]):
                 info.append(flight['thread']['number'])
                 info.append(flight['thread']['title'])
-                info.append(flight['departure'][11:19])
+                info.append(flight['departure'][11:16])
                 flights.append(info)
     #print(f'Табло рейсов на Вылет, {name} \n')
     return ('<pre>'+tabulate(flights, headers = ["Рейс№", "Рейс", "Время вылета(!Местное время!)"], tablefmt="plain") + '</pre>')
@@ -45,9 +46,10 @@ def train_table(station_code, event):
             if default_date < datetime.datetime.fromisoformat(train['departure'][:19]):
                 info.append(train['thread']['number'])
                 info.append(train['thread']['title'])
-                info.append(train['departure'][11:19])
+                info.append(train['departure'][11:16])
                 trains.append(info)
-    #return (f'Расписание поездов, {name} \n')
-    return ('<pre>'+tabulate(trains, headers = ["№Номер поезда", "Поезд", "Время отправления(!Местное время!)"], tablefmt="plain")+ '</pre>')
-print(train_table(station_code ,event))
-#print(flight_table('departure'))
+    #return (f'Расписание поездов, {name} \n') 
+    return (tabulate(trains, headers = ["№ поезда", "Поезд", "Время отправления"], tablefmt="github"))
+f = open('schedule.txt', 'w')
+f.write(train_table(station_code ,event))
+
